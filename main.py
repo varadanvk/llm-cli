@@ -9,6 +9,8 @@ from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
 from termcolor import colored
 import textwrap
+from rich.console import Console
+from rich.markdown import Markdown
 
 def initialize():
     dotenv.load_dotenv()
@@ -49,7 +51,9 @@ def chat_with_ai(client, provider, model, messages):
         elif provider == 'anthropic':
             response = client.messages.create(
                 model=model,
-                messages=messages
+                messages=messages,
+                max_tokens=4096,
+                stream=False
             )
             return response.content[0].text
     except Exception as e:
@@ -67,6 +71,11 @@ def print_wrapped_text(text, width=80, indent="  "):
     wrapped_lines = textwrap.wrap(text, width=width)
     for line in wrapped_lines:
         print(f"{indent}{line}")
+
+def render_markdown(text):
+    console = Console()
+    md = Markdown(text)
+    console.print(md)
 
 def main():
     api_keys = initialize()
@@ -86,14 +95,13 @@ def main():
     print(colored("  'quit' or 'exit' - End the conversation", "yellow"))
 
     all_models = [model for provider_models in models.values() for model in provider_models]
-    model_completer = WordCompleter(all_models)
 
     provider = 'groq'  # Default provider
     model = 'llama-3.1-70b-versatile'  # Default model
     conversation_history = []
 
     while True:
-        user_input = prompt("\nYou: ", completer=model_completer).strip()
+        user_input = prompt("\nYou: ").strip()
 
         if user_input.lower() in ['quit', 'exit']:
             print(colored("Goodbye!", "cyan"))
@@ -103,6 +111,8 @@ def main():
             print(colored("\nAvailable models:", "cyan"))
             for p, m_list in models.items():
                 print(colored(f"{p.capitalize()}:", "yellow"))
+                model_completer = WordCompleter(all_models)
+
                 for m in m_list:
                     print(colored(f"  - {m}", "green"))
             new_model = prompt("Enter the name of the new model: ", completer=model_completer).strip()
@@ -133,7 +143,8 @@ def main():
         response = chat_with_ai(clients[provider], provider, model, conversation_history)
         if response:
             print(colored(f"\n{model}:", "green", attrs=["bold"]))
-            print_wrapped_text(response)
+            #print_wrapped_text(response)
+            render_markdown(response)
             conversation_history.append({"role": "assistant", "content": response})
         else:
             print(colored(f"Failed to get a response from {model}.", "red"))
