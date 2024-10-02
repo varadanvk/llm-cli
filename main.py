@@ -93,6 +93,8 @@ def main():
     print(colored("  'token count' - Display token count for the conversation", "yellow"))
     print(colored("  'clear history' - Clear the conversation history", "yellow"))
     print(colored("  'quit' or 'exit' - End the conversation", "yellow"))
+    print(colored("  'help' - Show menu options", "yellow"))
+
 
     all_models = [model for provider_models in models.values() for model in provider_models]
 
@@ -102,6 +104,8 @@ def main():
 
     while True:
         user_input = prompt("\nYou: ").strip()
+        print("")
+        print("––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––")
 
         if user_input.lower() in ['quit', 'exit']:
             print(colored("Goodbye!", "cyan"))
@@ -122,6 +126,16 @@ def main():
                     model = new_model
                     break
             print(colored(f"Model changed to: {model} (Provider: {provider})", "cyan"))
+            continue
+        if user_input.lower() == "help":
+            print(colored("Welcome to the Multi-Model AI Chat CLI!", "cyan", attrs=["bold"]))
+            print(colored("Available commands:", "yellow"))
+            print(colored("  'change model' - Switch to a different AI model", "yellow"))
+            print(colored("  'token count' - Display token count for the conversation", "yellow"))
+            print(colored("  'clear history' - Clear the conversation history", "yellow"))
+            print(colored("  'quit' or 'exit' - End the conversation", "yellow"))
+            print(colored("  'help' - Show menu options", "yellow"))
+
             continue
 
         if user_input.lower() == 'token count':
@@ -145,6 +159,9 @@ def main():
             print(colored(f"\n{model}:", "green", attrs=["bold"]))
             #print_wrapped_text(response)
             render_markdown(response)
+            print("")
+            print("––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––")
+
             conversation_history.append({"role": "assistant", "content": response})
         else:
             print(colored(f"Failed to get a response from {model}.", "red"))
