@@ -4,7 +4,7 @@ This is a command-line interface (CLI) application that allows users to interact
 
 ## Features
 
-- Supports multiple AI providers: Groq, OpenAI, and Anthropic
+- Supports multiple AI providers: Groq, OpenAI, Anthropic, and Cerebras
 - Allows switching between different AI models
 - Keeps track of conversation history
 - Provides token count for the conversation
@@ -30,6 +30,7 @@ pip install -r requirements.txt
 GROQ_API_KEY=your_groq_api_key
 OPENAI_API_KEY=your_openai_api_key
 ANTHROPIC_API_KEY=your_anthropic_api_key
+CEREBRAS_API_KEY=your_cerebras_api_key
 ```
 
 4. Run the script:
@@ -50,3 +51,4 @@ Supported Models
 - Groq: llama-3.1-70b-versatile, mixtral-8x7b-32768, llama-3.1-8b-instant
 - OpenAI: gpt-3.5-turbo, gpt-4, gpt-4o
 - Anthropic: claude-3-5-sonnet-20240620, claude-3-opus-20240229, claude-3-sonnet-20240229
+- Cerebras: llama-3.1-8b
