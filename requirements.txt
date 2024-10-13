@@ -6,3 +6,4 @@ tiktoken==0.6.0
 prompt_toolkit==3.0.43
 rich==13.3.5
 termcolor
+cerebras_cloud_sdk

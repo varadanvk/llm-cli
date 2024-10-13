@@ -11,13 +11,15 @@ from termcolor import colored
 import textwrap
 from rich.console import Console
 from rich.markdown import Markdown
+from cerebras.cloud.sdk import Cerebras
 
 def initialize():
     dotenv.load_dotenv()
     api_keys = {
         'groq': os.getenv("GROQ_API_KEY"),
         'openai': os.getenv("OPENAI_API_KEY"),
-        'anthropic': os.getenv("ANTHROPIC_API_KEY")
+        'anthropic': os.getenv("ANTHROPIC_API_KEY"),
+        'cerebras': os.getenv("CEREBRAS_API_KEY")
     }
     for provider, key in api_keys.items():
         if not key:
@@ -32,6 +34,8 @@ def create_clients(api_keys):
         clients['openai'] = openai.OpenAI(api_key=api_keys['openai'])
     if api_keys['anthropic']:
         clients['anthropic'] = Anthropic(api_key=api_keys['anthropic'])
+    if api_keys['cerebras']:
+        clients['cerebras'] = Cerebras(api_key=api_keys['cerebras'])
     return clients
 
 def chat_with_ai(client, provider, model, messages):
@@ -56,6 +60,12 @@ def chat_with_ai(client, provider, model, messages):
                 stream=False
             )
             return response.content[0].text
+        elif provider == 'cerebras':
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages
+            )
+            return response.choices[0].message.content
     except Exception as e:
         print(f"Error occurred while communicating with {provider}: {str(e)}")
         return None
@@ -84,7 +94,8 @@ def main():
     models = {
         'groq': ['llama-3.1-70b-versatile', 'mixtral-8x7b-32768', 'llama-3.1-8b-instant'],
         'openai': ['gpt-3.5-turbo', 'gpt-4', 'gpt-4o'],
-        'anthropic': ['claude-3-5-sonnet-20240620', 'claude-3-opus-20240229', 'claude-3-sonnet-20240229']
+        'anthropic': ['claude-3-5-sonnet-20240620', 'claude-3-opus-20240229', 'claude-3-sonnet-20240229'],
+        'cerebras': ['llama3.1-8b']
     }
 
     print(colored("Welcome to the Multi-Model AI Chat CLI!", "cyan", attrs=["bold"]))
@@ -95,11 +106,11 @@ def main():
     print(colored("  'quit' or 'exit' - End the conversation", "yellow"))
     print(colored("  'help' - Show menu options", "yellow"))
 
-
     all_models = [model for provider_models in models.values() for model in provider_models]
+    model_completer = WordCompleter(all_models, ignore_case=True)
 
-    provider = 'groq'  # Default provider
-    model = 'llama-3.1-70b-versatile'  # Default model
+    provider = 'cerebras'  # Default provider
+    model = 'llama3.1-8b'  # Default model
     conversation_history = []
 
     while True:
@@ -115,8 +126,6 @@ def main():
             print(colored("\nAvailable models:", "cyan"))
             for p, m_list in models.items():
                 print(colored(f"{p.capitalize()}:", "yellow"))
-                model_completer = WordCompleter(all_models)
-
                 for m in m_list:
                     print(colored(f"  - {m}", "green"))
             new_model = prompt("Enter the name of the new model: ", completer=model_completer).strip()
