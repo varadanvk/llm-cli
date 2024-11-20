@@ -34,7 +34,7 @@ dependencies = [
 ]
 
 [project.scripts]
-llm-chat = "llm_chat.cli:main"
+mlcc = "llm_chat.cli:main"
 
 
 [project.urls]
