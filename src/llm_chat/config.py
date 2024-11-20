@@ -18,7 +18,7 @@ def initialize():
     """
     config_file = Path.home() / ".llm_cli" / "config.json"
     if not config_file.exists():
-        print("API keys not found. Please run 'llm-chat setup' first.")
+        print("API keys not found. Please run 'lmci setup' first.")
         exit(1)
 
     with open(config_file, "r") as f:
