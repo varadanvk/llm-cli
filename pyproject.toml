@@ -3,7 +3,7 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mlcc"
+name = "llm-chat-cli"
 version = "0.1.0"
 description = "A CLI tool for chatting with multiple LLM providers"
 authors = [{name = "Varadan Kalkunte", email = "varadan.vk@gmail.com"}]
@@ -34,7 +34,7 @@ dependencies = [
 ]
 
 [project.scripts]
-mlcc = "llm_chat.cli:main"
+lmci = "llm_chat.cli:main"
 
 
 [project.urls]

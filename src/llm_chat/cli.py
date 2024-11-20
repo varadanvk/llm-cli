@@ -68,8 +68,8 @@ def main():
         return
 
     api_keys = initialize()
-    print(colored("API keys loaded successfully.", "green"))
     clients = create_clients(api_keys)
+    print(colored("Initialization Successful.", "green"))
 
     models = {
         'groq': ['llama-3.1-70b-versatile', 'mixtral-8x7b-32768', 'llama-3.1-8b-instant'],
