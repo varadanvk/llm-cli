@@ -52,3 +52,5 @@ Supported Models
 - OpenAI: gpt-3.5-turbo, gpt-4, gpt-4o
 - Anthropic: claude-3-5-sonnet-20240620, claude-3-opus-20240229, claude-3-sonnet-20240229
 - Cerebras: llama-3.1-8b
+
+Enjoy!
