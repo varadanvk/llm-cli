@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="llm-chat-cli",
-    version="0.1.0",
+    version="0.0.2",
     description="A CLI tool for chatting with multiple LLM providers",
     long_description="""
 # llm-chat-cli
