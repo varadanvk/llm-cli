@@ -75,7 +75,7 @@ def main():
         'groq': ['llama-3.1-70b-versatile', 'mixtral-8x7b-32768', 'llama-3.1-8b-instant'],
         'openai': ['gpt-3.5-turbo', 'gpt-4', 'gpt-4o'],
         'anthropic': ['claude-3-5-sonnet-latest', 'claude-3-opus-20240229', 'claude-3-sonnet-20240229'],
-        'cerebras': ['llama3.1-8b']
+        'cerebras': ['llama3.1-8b', "llama-3.3-70b"]
     }
 
     print(colored("Welcome to the Multi-Model AI Chat CLI!", "cyan", attrs=["bold"]))
@@ -84,9 +84,8 @@ def main():
     all_models = [model for provider_models in models.values() for model in provider_models]
     model_completer = WordCompleter(all_models, ignore_case=True)
 
-    # Initialize defaults
-    provider = 'openai'  # Default provider
-    model = 'gpt-4o'  # Default model
+    provider = 'cerebras'  # Default provider
+    model = 'llama-3.3-70b'  # Default model
     conversation_history = []
 
     while True:
@@ -110,14 +109,38 @@ def main():
             print(colored(f"Error: No API key available for {provider}.", "red"))
             continue
 
-        response = chat_with_ai(clients[provider], provider, model, conversation_history)
+        response = chat_with_ai(clients[provider], provider, model, conversation_history, stream=True)
+
         if response:
             print(colored(f"\n{model}:", "green", attrs=["bold"]))
-            render_markdown(response)
+
+            buffer = ""  # Buffer to accumulate chunks
+            inside_code_block = False  # Track whether we're inside a code block
+
+            # Process the streamed response
+            for chunk in response:
+                buffer += chunk
+
+                # Check for opening/closing of code blocks
+                if "```" in chunk:
+                    inside_code_block = not inside_code_block
+
+                # If not inside a code block, or buffer exceeds threshold, render
+                if not inside_code_block and len(buffer) > 100:
+                    render_markdown(buffer)
+                    buffer = ""  # Reset buffer
+
+            # Render any remaining content in the buffer
+            if buffer:
+                render_markdown(buffer)
+
             print("\n" + "–" * 70)
-            conversation_history.append({"role": "assistant", "content": response})
+            conversation_history.append({"role": "assistant", "content": "Streamed content."})
         else:
             print(colored(f"Failed to get a response from {model}.", "red"))
+
+
+
 
 if __name__ == "__main__":
     main()
