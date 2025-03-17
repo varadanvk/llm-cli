@@ -3,6 +3,7 @@
 Main entry point for running LLM Chat directly.
 This allows running the package without installation using `python main.py`
 """
+
 import sys
 import os
 
@@ -20,6 +21,7 @@ print(f"Python path after modification: {sys.path}")
 
 try:
     from src.llm_chat.cli import main
+
     print("Successfully imported main from llm_chat.cli")
 except ImportError as e:
     print(f"Import error: {e}")
@@ -27,6 +29,7 @@ except ImportError as e:
     print("Make sure you have all dependencies installed:")
     print("pip install -r requirements.txt")
     sys.exit(1)
+
 
 def run_main():
     """
@@ -41,6 +44,7 @@ def run_main():
     except Exception as e:
         print(f"\nAn error occurred: {str(e)}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     run_main()

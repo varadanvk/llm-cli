@@ -1,39 +1,54 @@
-"""
-Command-line interface for LLM Chat
-"""
 import sys
+import time
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
+from .utils import print_available_models
 from termcolor import colored
-from .config import initialize
+from .config import (
+    initialize,
+    load_config,
+    save_config,
+)  # Import the necessary functions from config
 from .clients import create_clients
 from .chat import chat_with_ai
-from .utils import count_tokens, render_markdown
+from .utils import count_tokens, render_markdown, create_typing_animation
 from .setup import setup
+
 
 def print_help_menu():
     """Print the help menu with available commands."""
     print(colored("Available commands:", "yellow"))
     print(colored("  'change model' - Switch to a different AI model", "yellow"))
-    print(colored("  'token count' - Display token count for the conversation", "yellow"))
+    print(
+        colored("  'token count' - Display token count for the conversation", "yellow")
+    )
     print(colored("  'clear history' - Clear the conversation history", "yellow"))
     print(colored("  'quit' or 'exit' - End the conversation", "yellow"))
+    print(colored("  'default' - Set a default model", "yellow"))
     print(colored("  'help' - Show menu options", "yellow"))
 
-def handle_commands(user_input, models, model_completer, conversation_history, provider, model):
+
+def handle_commands(
+    user_input,
+    models,
+    model_completer,
+    conversation_history,
+    provider,
+    model,
+    default_provider,
+    default_model,
+):
     """
     Handle CLI commands and their execution.
 
     Returns:
-        tuple: (bool, provider, model)
+        tuple: (bool, provider, model, default_provider, default_model)
     """
-    if user_input.lower() == 'change model':
-        print(colored("\nAvailable models:", "cyan"))
-        for p, m_list in models.items():
-            print(colored(f"{p.capitalize()}:", "yellow"))
-            for m in m_list:
-                print(colored(f"  - {m}", "green"))
-        new_model = prompt("Enter the name of the new model: ", completer=model_completer).strip()
+    if user_input.lower() == "change model":
+        print_available_models(models)
+        new_model = prompt(
+            "Enter the name of the new model: ", completer=model_completer
+        ).strip()
         for p, m_list in models.items():
             if new_model in m_list:
                 provider = p
@@ -41,25 +56,58 @@ def handle_commands(user_input, models, model_completer, conversation_history, p
                 break
         else:
             print(colored(f"Model '{new_model}' not found. Please try again.", "red"))
-            return True, provider, model
+            return True, provider, model, default_provider, default_model
         print(colored(f"Model changed to: {model} (Provider: {provider})", "cyan"))
-        return True, provider, model
+        return True, provider, model, default_provider, default_model
+
+    if user_input.lower() == "default":
+        print_available_models(models)
+        new_default_model = prompt(
+            "Enter the name of the new default model: ", completer=model_completer
+        ).strip()
+        new_default_provider = None
+        for p, m_list in models.items():
+            if new_default_model in m_list:
+                new_default_provider = p
+                break
+        if new_default_provider:
+            default_provider = new_default_provider
+            default_model = new_default_model
+            save_config(
+                {"default_provider": default_provider, "default_model": default_model}
+            )  # Save both provider and model
+            print(
+                colored(
+                    f"Default model set to: {default_model} (Provider: {default_provider})",
+                    "cyan",
+                )
+            )
+        else:
+            print(
+                colored(
+                    f"Model '{new_default_model}' not found. Please try again.", "red"
+                )
+            )
+        return True, provider, model, default_provider, default_model
 
     if user_input.lower() == "help":
         print_help_menu()
-        return True, provider, model
+        return True, provider, model, default_provider, default_model
 
-    if user_input.lower() == 'token count':
-        total_tokens = sum(count_tokens(m['content'], model) for m in conversation_history)
+    if user_input.lower() == "token count":
+        total_tokens = sum(
+            count_tokens(m["content"], model) for m in conversation_history
+        )
         print(colored(f"Current conversation token count: {total_tokens}", "cyan"))
-        return True, provider, model
+        return True, provider, model, default_provider, default_model
 
-    if user_input.lower() == 'clear history':
+    if user_input.lower() == "clear history":
         conversation_history.clear()
         print(colored("Conversation history cleared.", "cyan"))
-        return True, provider, model
+        return True, provider, model, default_provider, default_model
 
-    return False, provider, model
+    return False, provider, model, default_provider, default_model
+
 
 def main():
     """Main CLI entry point."""
@@ -67,37 +115,62 @@ def main():
         setup()
         return
 
-    api_keys = initialize()
+    api_keys = initialize()  # Load API keys using the initialize function from config
     clients = create_clients(api_keys)
     print(colored("Initialization Successful.", "green"))
 
     models = {
-        'groq': ['llama-3.1-70b-versatile', 'mixtral-8x7b-32768', 'llama-3.1-8b-instant'],
-        'openai': ['gpt-3.5-turbo', 'gpt-4', 'gpt-4o'],
-        'anthropic': ['claude-3-5-sonnet-latest', 'claude-3-opus-20240229', 'claude-3-sonnet-20240229'],
-        'cerebras': ['llama3.1-8b', "llama-3.3-70b"]
+        "groq": [
+            "llama-3.1-70b-versatile",
+            "mixtral-8x7b-32768",
+            "llama-3.1-8b-instant",
+        ],
+        "openai": ["gpt-3.5-turbo", "gpt-4", "gpt-4o"],
+        "anthropic": [
+            "claude-3-5-sonnet-20241022",
+            "claude-3-opus-20240229",
+            "claude-3-5-haiku-20241022",
+        ],
+        "cerebras": ["llama3.1-8b", "llama-3.3-70b"],
     }
 
     print(colored("Welcome to the Multi-Model AI Chat CLI!", "cyan", attrs=["bold"]))
     print_help_menu()
 
-    all_models = [model for provider_models in models.values() for model in provider_models]
+    all_models = [
+        model for provider_models in models.values() for model in provider_models
+    ]
     model_completer = WordCompleter(all_models, ignore_case=True)
 
-    provider = 'cerebras'  # Default provider
-    model = 'llama-3.3-70b'  # Default model
+    # Load saved configuration using the load_config function from config
+    config = load_config()
+    default_provider = config.get(
+        "default_provider", "cerebras"
+    )  # Default provider if not in config
+    default_model = config.get(
+        "default_model", "llama-3.3-70b"
+    )  # Default model if not in config
+    provider = default_provider  # Set to default provider
+    model = default_model  # Set to default model
     conversation_history = []
 
     while True:
         user_input = prompt("\nYou: ").strip()
         print("\n" + "–" * 70)
 
-        if user_input.lower() in ['quit', 'exit']:
+        if user_input.lower() in ["quit", "exit"]:
             print(colored("\nGoodbye!", "cyan"))
             break
 
-        handled, provider, model = handle_commands(
-            user_input, models, model_completer, conversation_history, provider, model
+        handled, provider, model, default_provider, default_model = handle_commands(
+            user_input,
+            models,
+            model_completer,
+            conversation_history,
+            provider,
+            model,
+            default_provider,
+            default_model,
         )
 
         if handled:
@@ -109,37 +182,60 @@ def main():
             print(colored(f"Error: No API key available for {provider}.", "red"))
             continue
 
-        response = chat_with_ai(clients[provider], provider, model, conversation_history, stream=True)
+        # Use the default model if no model is currently selected
+        if not model:
+            model = default_model
+            provider = default_provider
+
+        # Show thinking animation before getting response
+        create_typing_animation(f"Getting response from {model}")
+
+        response = chat_with_ai(
+            clients[provider], provider, model, conversation_history, stream=True
+        )
 
         if response:
             print(colored(f"\n{model}:", "green", attrs=["bold"]))
+            print("\n")
 
+            # Initialize variables for streaming
             buffer = ""  # Buffer to accumulate chunks
+            full_response = ""  # Store the complete response
             inside_code_block = False  # Track whether we're inside a code block
+            last_render_time = time.time()  # Track when we last rendered
+            update_interval = 0.1  # Update the display every 0.1 seconds
 
             # Process the streamed response
             for chunk in response:
+                if chunk is None:
+                    continue
+
                 buffer += chunk
+                full_response += chunk
 
                 # Check for opening/closing of code blocks
                 if "```" in chunk:
                     inside_code_block = not inside_code_block
 
-                # If not inside a code block, or buffer exceeds threshold, render
-                if not inside_code_block and len(buffer) > 100:
+                # Update the display at a consistent rate for smoother experience
+                current_time = time.time()
+                if current_time - last_render_time > update_interval:
+                    # Clear previous output by moving cursor up and erasing
+                    if buffer and buffer != full_response:
+                        lines_to_clear = buffer.count("\n") + 2
+                        print(f"\033[{lines_to_clear}A\033[J", end="")
                     render_markdown(buffer)
-                    buffer = ""  # Reset buffer
+                    buffer = ""  # Reset buffer after rendering
+                    last_render_time = current_time
 
-            # Render any remaining content in the buffer
-            if buffer:
-                render_markdown(buffer)
+            # Final render with the complete response
+            render_markdown(full_response)
 
             print("\n" + "–" * 70)
-            conversation_history.append({"role": "assistant", "content": "Streamed content."})
+            # Store the actual complete response in conversation history
+            conversation_history.append({"role": "assistant", "content": full_response})
         else:
             print(colored(f"Failed to get a response from {model}.", "red"))
-
-
 
 
 if __name__ == "__main__":
