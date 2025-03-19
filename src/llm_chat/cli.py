@@ -4,6 +4,8 @@ from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
 from .utils import print_available_models
 from termcolor import colored
+from rich.console import Console
+from rich.markdown import Markdown
 from .config import (
     initialize,
     load_config,
@@ -11,7 +13,7 @@ from .config import (
 )  # Import the necessary functions from config
 from .clients import create_clients
 from .chat import chat_with_ai
-from .utils import count_tokens, render_markdown, create_typing_animation
+from .utils import count_tokens, create_typing_animation, stream_with_markdown_chunks
 from .setup import setup
 
 
@@ -145,10 +147,10 @@ def main():
     # Load saved configuration using the load_config function from config
     config = load_config()
     default_provider = config.get(
-        "default_provider", "cerebras"
+        "default_provider", "openai"
     )  # Default provider if not in config
     default_model = config.get(
-        "default_model", "llama-3.3-70b"
+        "default_model", "gpt-4o"
     )  # Default model if not in config
     provider = default_provider  # Set to default provider
     model = default_model  # Set to default model
@@ -196,40 +198,9 @@ def main():
 
         if response:
             print(colored(f"\n{model}:", "green", attrs=["bold"]))
-            print("\n")
 
-            # Initialize variables for streaming
-            buffer = ""  # Buffer to accumulate chunks
-            full_response = ""  # Store the complete response
-            inside_code_block = False  # Track whether we're inside a code block
-            last_render_time = time.time()  # Track when we last rendered
-            update_interval = 0.1  # Update the display every 0.1 seconds
-
-            # Process the streamed response
-            for chunk in response:
-                if chunk is None:
-                    continue
-
-                buffer += chunk
-                full_response += chunk
-
-                # Check for opening/closing of code blocks
-                if "```" in chunk:
-                    inside_code_block = not inside_code_block
-
-                # Update the display at a consistent rate for smoother experience
-                current_time = time.time()
-                if current_time - last_render_time > update_interval:
-                    # Clear previous output by moving cursor up and erasing
-                    if buffer and buffer != full_response:
-                        lines_to_clear = buffer.count("\n") + 2
-                        print(f"\033[{lines_to_clear}A\033[J", end="")
-                    render_markdown(buffer)
-                    buffer = ""  # Reset buffer after rendering
-                    last_render_time = current_time
-
-            # Final render with the complete response
-            render_markdown(full_response)
+            # Stream the response with special handling for code blocks
+            full_response = stream_with_markdown_chunks(response)
 
             print("\n" + "–" * 70)
             # Store the actual complete response in conversation history
