@@ -51,10 +51,10 @@ def render_markdown(text, stream_mode=False, last_chunk=""):
     """
     console = Console()
     md = Markdown(text)
-    
+
     if stream_mode:
         # Only render the new addition to the text
-        new_text = text[len(last_chunk):]
+        new_text = text[len(last_chunk) :]
         if new_text:
             # Print without the markdown formatting for streaming
             sys.stdout.write(new_text)
@@ -62,7 +62,8 @@ def render_markdown(text, stream_mode=False, last_chunk=""):
     else:
         # Full render with markdown formatting
         console.print(md)
-        
+
+
 def stream_with_markdown_chunks(chunks, code_blocks=True):
     """
     Stream text with special handling for code blocks.
@@ -73,14 +74,14 @@ def stream_with_markdown_chunks(chunks, code_blocks=True):
     buffer = ""
     showed_generating_message = False
     console = Console()
-    
+
     for chunk in chunks:
         if chunk is None:
             continue
-            
+
         full_response += chunk
         buffer += chunk
-        
+
         # Keep processing buffer while we have ``` markers
         while True:
             if not in_code_block:
@@ -88,18 +89,18 @@ def stream_with_markdown_chunks(chunks, code_blocks=True):
                 marker_pos = buffer.find("```")
                 if marker_pos == -1:
                     break  # No more markers
-                
+
                 # Output everything before ```
                 before_marker = buffer[:marker_pos]
                 if before_marker:
                     sys.stdout.write(before_marker)
                     sys.stdout.flush()
-                
+
                 # Show generating message
                 sys.stdout.write(colored("\n> Generating code... ", "cyan"))
                 sys.stdout.flush()
                 showed_generating_message = True
-                
+
                 # Switch to code block mode, keeping ``` and everything after
                 in_code_block = True
                 buffer = buffer[marker_pos:]
@@ -113,34 +114,48 @@ def stream_with_markdown_chunks(chunks, code_blocks=True):
                 else:
                     # Skip the opening ``` and find the next one
                     marker_pos = buffer.find("```", 3)
-                
+
                 if marker_pos == -1:
                     break  # No closing marker yet, keep buffering
-                
+
                 # Include everything up to and including the closing ```
-                code_block = buffer[:marker_pos + 3]
-                
+                code_block = buffer[: marker_pos + 3]
+
                 # Clear generating message
                 if showed_generating_message:
                     sys.stdout.write("\r" + " " * 30 + "\r")
                     sys.stdout.flush()
                     showed_generating_message = False
-                
+
                 # Display the code block with markdown
                 console.print(Markdown(code_block))
-                
+
                 # Switch out of code block mode
                 in_code_block = False
-                buffer = buffer[marker_pos + 3:]  # Continue with rest
-        
+                buffer = buffer[marker_pos + 3 :]  # Continue with rest
+
         # If not in code block and buffer doesn't contain ```, handle it
         if not in_code_block and buffer and "```" not in buffer:
             # Check if buffer has markdown elements that need rendering
-            markdown_markers = ["#", "**", "*", "_", ">", "- ", "1. ", "![", "[", "|", "`"]
+            markdown_markers = [
+                "#",
+                "**",
+                "*",
+                "_",
+                ">",
+                "- ",
+                "1. ",
+                "![",
+                "[",
+                "|",
+                "`",
+            ]
             has_markdown = any(marker in buffer for marker in markdown_markers)
-            
+
             # If it has markdown and looks complete (ends with double newline or is getting long)
-            if has_markdown and (buffer.endswith("\n\n") or (buffer.endswith("\n") and len(buffer) > 200)):
+            if has_markdown and (
+                buffer.endswith("\n\n") or (buffer.endswith("\n") and len(buffer) > 200)
+            ):
                 console.print(Markdown(buffer.rstrip()))
                 buffer = ""
             # If no markdown, stream it directly
@@ -149,12 +164,16 @@ def stream_with_markdown_chunks(chunks, code_blocks=True):
                 sys.stdout.flush()
                 buffer = ""
             # If single line with newline and no special markdown, stream it
-            elif buffer.count("\n") == 1 and buffer.endswith("\n") and not any(m in buffer for m in ["#", "|", "-", "*", ">"]):
+            elif (
+                buffer.count("\n") == 1
+                and buffer.endswith("\n")
+                and not any(m in buffer for m in ["#", "|", "-", "*", ">"])
+            ):
                 sys.stdout.write(buffer)
                 sys.stdout.flush()
                 buffer = ""
             # Otherwise keep buffering (has markdown but not complete section yet)
-    
+
     # Handle any remaining content
     if buffer:
         if in_code_block:
@@ -168,15 +187,27 @@ def stream_with_markdown_chunks(chunks, code_blocks=True):
             console.print(Markdown(buffer))
         else:
             # Regular text - check if it needs markdown rendering
-            markdown_markers = ["#", "**", "*", "_", ">", "- ", "1. ", "![", "[", "|", "`"]
+            markdown_markers = [
+                "#",
+                "**",
+                "*",
+                "_",
+                ">",
+                "- ",
+                "1. ",
+                "![",
+                "[",
+                "|",
+                "`",
+            ]
             has_markdown = any(marker in buffer for marker in markdown_markers)
-            
+
             if has_markdown:
                 console.print(Markdown(buffer))
             else:
                 sys.stdout.write(buffer)
                 sys.stdout.flush()
-    
+
     return full_response
 
 

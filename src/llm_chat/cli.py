@@ -1,11 +1,8 @@
 import sys
-import time
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
 from .utils import print_available_models
 from termcolor import colored
-from rich.console import Console
-from rich.markdown import Markdown
 from .config import (
     initialize,
     load_config,
@@ -109,7 +106,7 @@ def handle_commands(
         conversation_history.clear()
         print(colored("Conversation history cleared.", "cyan"))
         return True, provider, model, default_provider, default_model
-        
+
     # Handle terminal command execution
     if user_input.lower().startswith("exec ") or user_input.startswith("! "):
         # Extract the command to execute
@@ -117,12 +114,17 @@ def handle_commands(
             command = user_input[5:].strip()
         else:  # Starts with "! "
             command = user_input[2:].strip()
-            
+
         if command:
             # Execute the command
             execute_terminal_command(command)
         else:
-            print(colored("Error: No command specified. Use 'exec <command>' or '! <command>'.", "red"))
+            print(
+                colored(
+                    "Error: No command specified. Use 'exec <command>' or '! <command>'.",
+                    "red",
+                )
+            )
         return True, provider, model, default_provider, default_model
 
     return False, provider, model, default_provider, default_model
