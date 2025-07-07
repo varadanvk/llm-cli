@@ -15,6 +15,7 @@ from .clients import create_clients
 from .chat import chat_with_ai
 from .utils import count_tokens, create_typing_animation, stream_with_markdown_chunks
 from .setup import setup
+from .tools import execute_terminal_command
 
 
 def print_help_menu():
@@ -27,6 +28,7 @@ def print_help_menu():
     print(colored("  'clear history' - Clear the conversation history", "yellow"))
     print(colored("  'quit' or 'exit' - End the conversation", "yellow"))
     print(colored("  'default' - Set a default model", "yellow"))
+    print(colored("  'exec' or '!' - Execute a terminal command", "yellow"))
     print(colored("  'help' - Show menu options", "yellow"))
 
 
@@ -106,6 +108,21 @@ def handle_commands(
     if user_input.lower() == "clear history":
         conversation_history.clear()
         print(colored("Conversation history cleared.", "cyan"))
+        return True, provider, model, default_provider, default_model
+        
+    # Handle terminal command execution
+    if user_input.lower().startswith("exec ") or user_input.startswith("! "):
+        # Extract the command to execute
+        if user_input.lower().startswith("exec "):
+            command = user_input[5:].strip()
+        else:  # Starts with "! "
+            command = user_input[2:].strip()
+            
+        if command:
+            # Execute the command
+            execute_terminal_command(command)
+        else:
+            print(colored("Error: No command specified. Use 'exec <command>' or '! <command>'.", "red"))
         return True, provider, model, default_provider, default_model
 
     return False, provider, model, default_provider, default_model

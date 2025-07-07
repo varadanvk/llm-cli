@@ -1,5 +1,5 @@
 """
-Client management for different LLM providers
+Client management for different LLM providers and tools
 """
 
 from groq import Groq
@@ -15,6 +15,7 @@ def create_clients(api_keys):
         "openai": "OPENAI_API_KEY",
         "anthropic": "ANTHROPIC_API_KEY",
         "cerebras": "CEREBRAS_API_KEY",
+        "serper": "SERPER_API_KEY",  # For web search
     }
 
     for provider, env_var in api_key_mapping.items():

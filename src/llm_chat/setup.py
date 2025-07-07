@@ -11,12 +11,17 @@ def setup():
     )
 
     keys = {}
-    providers = ["groq", "openai", "anthropic", "cerebras"]
+    providers = ["groq", "openai", "anthropic", "cerebras", "serper"]
 
     for provider in providers:
-        key = getpass(f"Enter your {provider.upper()} API key (input will be hidden): ")
+        provider_name = provider.upper()
+        if provider == "serper":
+            print("\nSerper API is used for web search functionality.")
+            print("You can get a free API key from https://serper.dev")
+            
+        key = getpass(f"Enter your {provider_name} API key (input will be hidden): ")
         if key:
-            keys[f"{provider.upper()}_API_KEY"] = key
+            keys[f"{provider_name}_API_KEY"] = key
 
     config_dir = Path.home() / ".llm_cli"
     config_dir.mkdir(exist_ok=True)
