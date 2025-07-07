@@ -65,162 +65,117 @@ def render_markdown(text, stream_mode=False, last_chunk=""):
         
 def stream_with_markdown_chunks(chunks, code_blocks=True):
     """
-    Stream text with special handling for code blocks and other Markdown formatting.
-    
-    Args:
-        chunks (iterable): Iterator of text chunks to stream
-        code_blocks (bool): Whether to preserve code block formatting while streaming
-    
-    Returns:
-        str: The full accumulated response
+    Stream text with special handling for code blocks.
+    Simple implementation: stream normally until ```, then buffer until closing ```.
     """
     full_response = ""
     in_code_block = False
-    code_block_buffer = ""
+    buffer = ""
     showed_generating_message = False
     console = Console()
     
-    # Accumulate a buffer for paragraphs to apply markdown formatting
-    text_buffer = ""
-    special_markers = ["```", "##", "**", "*", "_", ">", "- ", "1. ", "![", "["]
-    needs_formatting = False
-    
-    # Helper function to render text with markdown formatting
-    def render_text(text):
-        # Skip if empty
-        if not text.strip():
-            return
+    for chunk in chunks:
+        if chunk is None:
+            continue
             
-        # Detect if text has markdown elements that need formatting
-        has_md = any(marker in text for marker in special_markers)
-        # Detect if text ends with a complete paragraph
-        ends_with_paragraph = text.endswith("\n\n") or text.endswith("\n")
+        full_response += chunk
+        buffer += chunk
         
-        # If we have markdown and a complete thought/paragraph, render it
-        if has_md and ends_with_paragraph:
-            console.print(Markdown(text))
-            return True
-        # If it's just plain text, output directly
-        elif not has_md:
-            sys.stdout.write(text)
-            sys.stdout.flush()
-            return True
-        # Otherwise, it needs more context to be formatted properly
-        return False
-    
-    try:
-        for chunk in chunks:
-            if chunk is None:
-                continue
+        # Keep processing buffer while we have ``` markers
+        while True:
+            if not in_code_block:
+                # Look for opening ```
+                marker_pos = buffer.find("```")
+                if marker_pos == -1:
+                    break  # No more markers
                 
-            full_response += chunk
-            
-            # If we see a code block marker
-            if "```" in chunk:
-                # We need to find all occurrences and handle them in order
-                remaining_chunk = chunk
-                while "```" in remaining_chunk:
-                    # Find the position of the next code block marker
-                    marker_pos = remaining_chunk.find("```")
-                    
-                    if in_code_block:
-                        # We're in a code block, this is a closing marker
-                        code_block_buffer += remaining_chunk[:marker_pos+3]
-                        
-                        # Clear the "generating code" message
-                        if showed_generating_message:
-                            sys.stdout.write("\r" + " " * 30 + "\r")
-                            sys.stdout.flush()
-                            showed_generating_message = False
-                        
-                        # Display the formatted code block
-                        console.print(Markdown(code_block_buffer))
-                        code_block_buffer = ""
-                        
-                        # Process remainder of chunk after this marker
-                        remaining_chunk = remaining_chunk[marker_pos+3:]
-                        in_code_block = False
-                    else:
-                        # We're not in a code block, this is an opening marker
-                        # First render any text before the marker with markdown
-                        if marker_pos > 0:
-                            text_to_render = remaining_chunk[:marker_pos]
-                            if text_buffer:
-                                text_to_render = text_buffer + text_to_render
-                                text_buffer = ""
-                            render_text(text_to_render)
-                        
-                        # Show "generating code" message
-                        sys.stdout.write(colored("\n> Generating code... ", "cyan"))
-                        sys.stdout.flush()
-                        showed_generating_message = True
-                        
-                        # Start the code block buffer with this marker
-                        code_block_buffer = remaining_chunk[marker_pos:]
-                        
-                        # Update remaining chunk to be empty since we've captured it all
-                        remaining_chunk = ""
-                        in_code_block = True
+                # Output everything before ```
+                before_marker = buffer[:marker_pos]
+                if before_marker:
+                    sys.stdout.write(before_marker)
+                    sys.stdout.flush()
                 
-                # If we've processed all markers but still have text and we're not in a code block
-                if remaining_chunk and not in_code_block:
-                    # Check if remaining chunk has markdown that needs formatting
-                    if any(marker in remaining_chunk for marker in special_markers):
-                        text_buffer += remaining_chunk
-                        # Try to render if it's a complete paragraph
-                        if "\n\n" in text_buffer or text_buffer.endswith("\n"):
-                            if render_text(text_buffer):
-                                text_buffer = ""
-                    else:
-                        # Just plain text, output directly
-                        sys.stdout.write(remaining_chunk)
-                        sys.stdout.flush()
+                # Show generating message
+                sys.stdout.write(colored("\n> Generating code... ", "cyan"))
+                sys.stdout.flush()
+                showed_generating_message = True
                 
+                # Switch to code block mode, keeping ``` and everything after
+                in_code_block = True
+                buffer = buffer[marker_pos:]
             else:
-                # No code block markers in this chunk
-                if in_code_block:
-                    # Add to the code block buffer
-                    code_block_buffer += chunk
+                # In code block, look for closing ``` (but not at position 0)
+                # We need to find the SECOND occurrence of ```
+                first_marker = buffer.find("```")
+                if first_marker != 0:
+                    # Something went wrong, treat as closing
+                    marker_pos = first_marker
                 else:
-                    # Check if chunk contains other markdown formatting
-                    if any(marker in chunk for marker in special_markers):
-                        text_buffer += chunk
-                        # Try to render if it looks like a complete paragraph or line
-                        if "\n\n" in text_buffer or text_buffer.endswith("\n"):
-                            if render_text(text_buffer):
-                                text_buffer = ""
-                    else:
-                        # Just plain text, output directly
-                        if text_buffer:
-                            # First try to render any buffered text
-                            if render_text(text_buffer):
-                                text_buffer = ""
-                            else:
-                                text_buffer += chunk
-                        else:
-                            sys.stdout.write(chunk)
-                            sys.stdout.flush()
+                    # Skip the opening ``` and find the next one
+                    marker_pos = buffer.find("```", 3)
+                
+                if marker_pos == -1:
+                    break  # No closing marker yet, keep buffering
+                
+                # Include everything up to and including the closing ```
+                code_block = buffer[:marker_pos + 3]
+                
+                # Clear generating message
+                if showed_generating_message:
+                    sys.stdout.write("\r" + " " * 30 + "\r")
+                    sys.stdout.flush()
+                    showed_generating_message = False
+                
+                # Display the code block with markdown
+                console.print(Markdown(code_block))
+                
+                # Switch out of code block mode
+                in_code_block = False
+                buffer = buffer[marker_pos + 3:]  # Continue with rest
         
-        # Handle any remaining text at the end
-        if text_buffer:
-            console.print(Markdown(text_buffer))
+        # If not in code block and buffer doesn't contain ```, handle it
+        if not in_code_block and buffer and "```" not in buffer:
+            # Check if buffer has markdown elements that need rendering
+            markdown_markers = ["#", "**", "*", "_", ">", "- ", "1. ", "![", "[", "|", "`"]
+            has_markdown = any(marker in buffer for marker in markdown_markers)
             
-        # Handle any incomplete code block at the end
-        if code_block_buffer:
+            # If it has markdown and looks complete (ends with double newline or is getting long)
+            if has_markdown and (buffer.endswith("\n\n") or (buffer.endswith("\n") and len(buffer) > 200)):
+                console.print(Markdown(buffer.rstrip()))
+                buffer = ""
+            # If no markdown, stream it directly
+            elif not has_markdown:
+                sys.stdout.write(buffer)
+                sys.stdout.flush()
+                buffer = ""
+            # If single line with newline and no special markdown, stream it
+            elif buffer.count("\n") == 1 and buffer.endswith("\n") and not any(m in buffer for m in ["#", "|", "-", "*", ">"]):
+                sys.stdout.write(buffer)
+                sys.stdout.flush()
+                buffer = ""
+            # Otherwise keep buffering (has markdown but not complete section yet)
+    
+    # Handle any remaining content
+    if buffer:
+        if in_code_block:
+            # Unclosed code block
             if showed_generating_message:
                 sys.stdout.write("\r" + " " * 30 + "\r")
                 sys.stdout.flush()
-                showed_generating_message = False
+            # Add closing markers and display
+            if not buffer.endswith("```"):
+                buffer += "\n```"
+            console.print(Markdown(buffer))
+        else:
+            # Regular text - check if it needs markdown rendering
+            markdown_markers = ["#", "**", "*", "_", ">", "- ", "1. ", "![", "[", "|", "`"]
+            has_markdown = any(marker in buffer for marker in markdown_markers)
             
-            console.print(Markdown(code_block_buffer))
-    
-    except Exception as e:
-        # If something goes wrong, try to recover
-        if showed_generating_message:
-            sys.stdout.write("\r" + " " * 30 + "\r")
-            sys.stdout.flush()
-        sys.stdout.write(f"\nError in streaming: {str(e)}\n")
-        sys.stdout.flush()
+            if has_markdown:
+                console.print(Markdown(buffer))
+            else:
+                sys.stdout.write(buffer)
+                sys.stdout.flush()
     
     return full_response
 
