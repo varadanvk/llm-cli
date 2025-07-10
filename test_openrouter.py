@@ -16,10 +16,7 @@ if not api_key:
     exit(1)
 
 # Create OpenRouter client
-client = OpenAI(
-    api_key=api_key,
-    base_url="https://openrouter.ai/api/v1"
-)
+client = OpenAI(api_key=api_key, base_url="https://openrouter.ai/api/v1")
 
 # Test with a simple prompt
 try:
@@ -27,12 +24,15 @@ try:
     response = client.chat.completions.create(
         model="openai/gpt-3.5-turbo",
         messages=[
-            {"role": "user", "content": "Say 'Hello from OpenRouter!' if you're working correctly."}
-        ]
+            {
+                "role": "user",
+                "content": "Say 'Hello from OpenRouter!' if you're working correctly.",
+            }
+        ],
     )
-    
+
     print("✓ Success! Response:", response.choices[0].message.content)
-    
+
 except Exception as e:
     print(f"✗ Error: {str(e)}")
     print("\nMake sure:")

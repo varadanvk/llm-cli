@@ -16,7 +16,7 @@ def create_clients(api_keys):
         "anthropic": "ANTHROPIC_API_KEY",
         "cerebras": "CEREBRAS_API_KEY",
         "serper": "SERPER_API_KEY",  # For web search
-        "openrouter": "OPENROUTER_API_KEY"
+        "openrouter": "OPENROUTER_API_KEY",
     }
 
     for provider, env_var in api_key_mapping.items():
@@ -29,7 +29,9 @@ def create_clients(api_keys):
             elif provider == "anthropic":
                 clients[provider] = Anthropic(api_key=key)
             elif provider == "openrouter":
-                clients[provider] = OpenAI(api_key=key, base_url="https://openrouter.ai/api/v1")
+                clients[provider] = OpenAI(
+                    api_key=key, base_url="https://openrouter.ai/api/v1"
+                )
             elif provider == "cerebras":
                 clients[provider] = Cerebras(api_key=key)
 
