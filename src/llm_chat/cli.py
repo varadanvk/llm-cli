@@ -146,11 +146,11 @@ def main():
             "mixtral-8x7b-32768",
             "llama-3.1-8b-instant",
         ],
-        "openai": ["gpt-3.5-turbo", "gpt-4", "gpt-4o"],
+        "openai": ["gpt-4o", "gpt-4.1", "o3"],
         "anthropic": [
-            "claude-3-5-sonnet-20241022",
-            "claude-3-opus-20240229",
-            "claude-3-5-haiku-20241022",
+            "claude-sonnet-4",
+            "claude-opus-4",
+            "claude-3.7-sonnet",
         ],
         "cerebras": ["llama3.1-8b", "llama-3.3-70b"],
     }
