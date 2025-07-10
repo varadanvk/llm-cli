@@ -26,7 +26,7 @@ def print_help_menu():
     print(colored("  'quit' or 'exit' - End the conversation", "yellow"))
     print(colored("  'default' - Set a default model", "yellow"))
     print(colored("  'help' - Show menu options", "yellow"))
-    print(colored("Use --- for a multi-line prompt", "yellow"))
+    print(colored("\n Use --- for a multi-line prompt", "yellow"))
 
 
 def handle_commands(
