@@ -25,8 +25,8 @@ def print_help_menu():
     print(colored("  'clear history' - Clear the conversation history", "yellow"))
     print(colored("  'quit' or 'exit' - End the conversation", "yellow"))
     print(colored("  'default' - Set a default model", "yellow"))
-    print(colored("  'exec' or '!' - Execute a terminal command", "yellow"))
     print(colored("  'help' - Show menu options", "yellow"))
+    print(colored("Use --- for a multi-line prompt", "yellow"))
 
 
 def handle_commands(
@@ -53,7 +53,24 @@ def handle_commands(
         for p, m_list in models.items():
             if new_model in m_list:
                 provider = p
-                model = new_model
+                if new_model == "custom" and p == "openrouter":
+                    custom_model = prompt(
+                        "Enter the OpenRouter model name (e.g., 'openai/gpt-4-turbo'): "
+                    ).strip()
+                    if custom_model:
+                        model = custom_model
+                        print(
+                            colored(f"Using custom OpenRouter model: {model}", "cyan")
+                        )
+                    else:
+                        print(
+                            colored(
+                                "No model specified. Keeping current model.", "yellow"
+                            )
+                        )
+                        return True, provider, model, default_provider, default_model
+                else:
+                    model = new_model
                 break
         else:
             print(colored(f"Model '{new_model}' not found. Please try again.", "red"))
@@ -73,7 +90,26 @@ def handle_commands(
                 break
         if new_default_provider:
             default_provider = new_default_provider
-            default_model = new_default_model
+            if new_default_model == "custom" and new_default_provider == "openrouter":
+                custom_model = prompt(
+                    "Enter the OpenRouter model name (e.g., 'openai/gpt-4-turbo'): "
+                ).strip()
+                if custom_model:
+                    default_model = custom_model
+                    print(
+                        colored(
+                            f"Using custom OpenRouter model: {default_model}", "cyan"
+                        )
+                    )
+                else:
+                    print(
+                        colored(
+                            "No model specified. Keeping current default.", "yellow"
+                        )
+                    )
+                    return True, provider, model, default_provider, default_model
+            else:
+                default_model = new_default_model
             save_config(
                 {"default_provider": default_provider, "default_model": default_model}
             )  # Save both provider and model
@@ -153,6 +189,7 @@ def main():
             "claude-3.7-sonnet",
         ],
         "cerebras": ["llama3.1-8b", "llama-3.3-70b"],
+        "openrouter": ["google/gemini-2.5-pro", "x-ai/grok-3", "x-ai/grok-4", "custom"],
     }
 
     print(colored("Welcome to the Multi-Model AI Chat CLI!", "cyan", attrs=["bold"]))
@@ -177,6 +214,15 @@ def main():
 
     while True:
         user_input = prompt("\nYou: ").strip()
+        if user_input.lower() == "---":
+            lines = []
+            while True:
+                line = prompt("").strip()
+                if line.lower() == "---":
+                    break
+                lines.append(line)
+            user_input = "\n".join(lines)
+
         print("\n" + "–" * 70)
 
         if user_input.lower() in ["quit", "exit"]:

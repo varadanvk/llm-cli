@@ -68,6 +68,17 @@ def chat_with_ai(client, provider, model, messages, stream=False):
             else:
                 return response.choices[0].message.content
 
+        elif provider == "openrouter":
+            response = client.chat.completions.create(
+                model=model, messages=messages, stream=stream
+            )
+            if stream:
+                # For streaming, yield chunks as they arrive
+                for chunk in response:
+                    yield chunk.choices[0].delta.content or ""
+            else:
+                return response.choices[0].message.content
+
     except Exception as e:
         print(f"Error occurred while communicating with {provider}: {str(e)}")
         return None
