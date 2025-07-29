@@ -2,7 +2,7 @@
 
 A CLI tool for chatting with multiple LLM providers in one place.
 
-![demo](https://utfs.io/f/62a441ee-ee3a-4bf6-aab6-0c853a03512b-pk3pxd.gif)
+![Demo]("https://utfs.io/f/62a441ee-ee3a-4bf6-aab6-0c853a03512b-pk3pxd.gif")
 
 ## Install
 
